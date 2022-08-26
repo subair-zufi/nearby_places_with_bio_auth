@@ -1,0 +1,1 @@
+enum ErrorCode{unknown, permissionDenied, locationOff, permissionDeniedForever}
