@@ -18,6 +18,8 @@ abstract class LocationService {
       LatLng startLocation, LatLng endLocation);
   Future<Either<Failure, double>> getDistance(
       LatLng startLocation, LatLng endLocation);
+
+  Future<Either<Failure, List<PlacesSearchResult>>> fetchPlaces(String query);
 }
 
 @LazySingleton(as: LocationService)
@@ -70,29 +72,20 @@ class LocationImpl extends LocationService {
   @override
   Future<Either<Failure, List<PlacesSearchResult>>> fethNearByPetrolStations(
       LatLng location) async {
-    try{
+    try {
       final places = GoogleMapsPlaces(apiKey: apiKey);
-    PlacesSearchResponse response = await places.searchNearbyWithRadius(
-      Location(lat: location.latitude, lng: location.longitude),
-      100000,
-      type: "gas_station",
-      keyword: 'petronas',
-    );
-    // Set<Marker> markers = response.results
-    //     .map((e) => Marker(
-    //         markerId: MarkerId(e.name),
-    //         icon: BitmapDescriptor.defaultMarkerWithHue(
-    //             BitmapDescriptor.hueAzure),
-    //         position:
-    //             LatLng(e.geometry!.location.lat, e.geometry!.location.lng)))
-    //     .toSet();
-
-    print("markers: ${response.results.length}");
-    if (response.errorMessage != null) {
-      return left(Failure(message: response.errorMessage.toString()));
-    }
-    return right(response.results);
-    }catch (e, stack){
+      PlacesSearchResponse response = await places.searchNearbyWithRankBy(
+        Location(lat: location.latitude, lng: location.longitude),
+        'distance',
+        type: "gas_station",
+        keyword: 'petronas',
+        name: 'petronas'
+      );
+      if (response.errorMessage != null) {
+        return left(Failure(message: response.errorMessage.toString()));
+      }
+      return right(response.results);
+    } catch (e, stack) {
       print(stack);
       return left(Failure(message: e.toString()));
     }
@@ -146,11 +139,37 @@ class LocationImpl extends LocationService {
   }
 
   double _calculateDistance(lat1, lon1, lat2, lon2) {
-    var p = 0.017453292519943295;
+    // var R = 6371; // Radius of the earth in km
+    // var dLat = deg2rad(lat2 - lat1); // deg2rad below
+    // var dLon = deg2rad(lon2 - lon1);
+    // var a = sin(dLat / 2) * sin(dLat / 2) +
+    //     cos(deg2rad(lat1)) * cos(deg2rad(lat2)) * sin(dLon / 2) * sin(dLon / 2);
+    // var c = 2 * atan2(sqrt(a), sqrt(1 - a));
+    // var d = R * c; // Distance in km
+    // return d.toDouble();
+
+        var p = 0.017453292519943295;
     var a = 0.5 -
         cos((lat2 - lat1) * p) / 2 +
         cos(lat1 * p) * cos(lat2 * p) * (1 - cos((lon2 - lon1) * p)) / 2;
     return 12742 * asin(sqrt(a));
+
+  }
+
+  double deg2rad(deg) {
+    return deg * (pi / 180);
+  }
+
+  @override
+  Future<Either<Failure, List<PlacesSearchResult>>> fetchPlaces(
+      String query) async {
+    try {
+      final places = GoogleMapsPlaces(apiKey: apiKey);
+      PlacesSearchResponse response = await places.searchByText(query);
+      return right(response.results);
+    } catch (e) {
+      return left(Failure(message: e.toString()));
+    }
   }
 }
 // https://maps.googleapis.com/maps/api/place/nearbysearch/json?keyword=cruise&location=37.4219983%2C-122.084&radius=1500&type=restaurant&key=AIzaSyBtFss8DzpsvR2IgKgNah-sQRQqrv8tSDE

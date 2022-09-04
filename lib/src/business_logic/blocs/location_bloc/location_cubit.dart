@@ -18,14 +18,14 @@ class LocationCubit extends Cubit<LocationState> {
     final fetchLocationTask = await getIt<LocationService>().currentLocation();
     fetchLocationTask.fold(
       (f) => emit(state.copyWith(isLoading: false, error: f)),
-      (data) async{
+      (data) async {
         emit(
           state.copyWith(
-            isLoading: false,
-            userLocation: LatLng(data.latitude, data.longitude),
-          ),
+              isLoading: false,
+              userLocation: LatLng(data.latitude, data.longitude),
+              error: null),
         );
-        await fetchNearByPetrolStations();
+        await fetchNearByPetrolStations(LatLng(data.latitude, data.longitude));
       },
     );
   }
@@ -38,23 +38,38 @@ class LocationCubit extends Cubit<LocationState> {
     );
     Geolocator.getPositionStream(locationSettings: locationSettings)
         .listen((event) {
+      emit(state.copyWith(
+          userLocation: LatLng(event.latitude, event.longitude)));
       state.controller!.animateCamera(CameraUpdate.newCameraPosition(
         CameraPosition(
             target: LatLng(event.latitude, event.longitude), zoom: 15),
       ));
-      emit(state.copyWith(
-          userLocation: LatLng(event.latitude, event.longitude)));
     });
     await Future.delayed(const Duration(microseconds: 400));
     // fetchNearByPetrolStations();
   }
 
-  fetchNearByPetrolStations() async {
+  fetchNearByPetrolStations(LatLng location) async {
     emit(state.copyWith(isLoading: true));
-    final fetchLocationsTask = await getIt<LocationService>()
-        .fethNearByPetrolStations(state.userLocation!);
+    final fetchLocationsTask =
+        await getIt<LocationService>().fethNearByPetrolStations(location);
     fetchLocationsTask.fold(
-        (f) => emit(state.copyWith(isLoading: false, error: f)),
-        (data) => emit(state.copyWith(isLoading: false, result: data)));
+        (f) => emit(state.copyWith(isLoading: false, error: f)), (data) async {
+      emit(state.copyWith(isLoading: false, result: data, error: null));
+      if (state.controller != null && state.result.isNotEmpty) {
+        for (PlacesSearchResult res in state.result) {
+          if (res.geometry != null) {
+            await Future.delayed(const Duration(seconds: 3));
+            await state.controller!
+                .animateCamera(CameraUpdate.newCameraPosition(
+              CameraPosition(
+                  target: LatLng(
+                      res.geometry!.location.lat, res.geometry!.location.lng),
+                  zoom: 15),
+            ));
+          }
+        }
+      }
+    });
   }
 }

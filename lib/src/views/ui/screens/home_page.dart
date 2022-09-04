@@ -9,6 +9,8 @@ import 'package:petronas_sample/src/business_logic/models/failure.dart';
 import 'package:petronas_sample/src/business_logic/services/location_service.dart';
 import 'package:petronas_sample/src/locator.dart';
 import 'package:petronas_sample/src/views/routes/app_router.dart';
+import 'package:petronas_sample/src/views/ui/widgets/place_search_deligate.dart';
+import 'package:petronas_sample/src/views/utils/snack_bar.dart';
 
 class HomePage extends StatelessWidget {
   const HomePage({Key? key}) : super(key: key);
@@ -17,6 +19,7 @@ class HomePage extends StatelessWidget {
   Widget build(BuildContext context) {
     final children = [
       const _MapContainer(),
+      const _ListHeader(),
       const _LocationList(),
     ];
     return Scaffold(
@@ -48,7 +51,7 @@ class _MapContainer extends StatelessWidget {
               zoom: 12,
             );
 
-            Set<Marker> markers = Set();
+            Set<Marker> markers = {};
             if (state.result.isNotEmpty) {
               for (PlacesSearchResult result in state.result) {
                 markers.add(Marker(
@@ -88,12 +91,44 @@ class _MapContainer extends StatelessWidget {
   }
 }
 
+class _ListHeader extends StatelessWidget {
+  const _ListHeader({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    void _changeLocation() async {
+      final cubit = context.read<LocationCubit>();
+      final PlacesSearchResult res =
+          await showSearch(context: context, delegate: PlaceSearchDeligate());
+      if (res != null && res.geometry != null) {
+        final location = res.geometry!.location;
+        cubit.fetchNearByPetrolStations(LatLng(location.lat, location.lng));
+      }
+    }
+
+    return BlocBuilder<LocationCubit, LocationState>(
+      builder: (context, state) {
+        return state.userLocation == null
+            ? const SizedBox()
+            : ListTile(
+                title: const Text('5 Nearby Petronas Gas Stations'),
+                subtitle: Text(state.isLoading
+                    ? "Loading.."
+                    : 'Tap here to change location'),
+                trailing: const Icon(Icons.search),
+                onTap: _changeLocation,
+              );
+      },
+    );
+  }
+}
+
 class _LocationList extends StatelessWidget {
   const _LocationList({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<LocationCubit, LocationState>(
+    return BlocConsumer<LocationCubit, LocationState>(
       builder: (context, state) {
         if (state.userLocation != null && state.result.isNotEmpty) {
           return ListView.builder(
@@ -105,18 +140,17 @@ class _LocationList extends StatelessWidget {
               return _PlaceTile(data, state);
             },
           );
-        }else if(state.result.isNotEmpty){
+        } else if (state.result.isNotEmpty) {
           return const Center(
             child: Text("No near by location found"),
           );
-        } else if (state.error != null) {
-          return Center(
-            child: Text(state.error!.message),
-          );
         } else {
-          return const Center(
-            child: Text("Loading.."),
-          );
+          return const SizedBox();
+        }
+      },
+      listener: (_, state) {
+        if (state.error != null) {
+          showSnackBar(context, Text(state.error!.message));
         }
       },
     );
@@ -155,7 +189,15 @@ class _PlaceTile extends StatelessWidget {
                       color: Colors.red,
                     ),
                   ),
-              (r) => Text("${r.toStringAsFixed(1)}km"));
+              (r) => Row(
+                mainAxisSize: MainAxisSize.min,
+
+                children: [
+                  Text("${r.toStringAsFixed(1)}km"),
+                  const SizedBox(width: 4,),
+                  const Icon(Icons.arrow_forward_ios_rounded)
+                ],
+              ));
         },
       ),
     );

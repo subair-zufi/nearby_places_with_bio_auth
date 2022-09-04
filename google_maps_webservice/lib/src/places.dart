@@ -258,6 +258,12 @@ class GoogleMapsPlaces extends GoogleWebService {
     if (apiKey != null) {
       params['key'] = apiKey!;
     }
+    print(url
+        .replace(
+          path: '${url.path}$_nearbySearchUrl',
+          queryParameters: params,
+        )
+        .toString());
     return url
         .replace(
           path: '${url.path}$_nearbySearchUrl',
