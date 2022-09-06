@@ -1,16 +1,11 @@
-# petronas_sample
+# Goole Maps and Place Search
 
-A new Flutter project.
+Following are the features the project holds:
+ - Google maps
+ - Listing 5 nearby `gas_station`s
+ - Marking listed locations
+ - Change location by search keyword
+ - Biometric authentication
 
-## Getting Started
 
-This project is a starting point for a Flutter application.
-
-A few resources to get you started if this is your first Flutter project:
-
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
-
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+![Screenshot](https://drive.google.com/uc?export=view&id=1K7z2MUX96s7-tR1U_v1ZM3pwo3d0Qboy)
