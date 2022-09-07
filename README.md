@@ -3,6 +3,7 @@
 Following are the features the project holds:
  - Google maps
  - Listing 5 nearby `gas_station`s
+ - Distance calculation
  - Marking listed locations
  - Change location by search keyword
  - Biometric authentication
